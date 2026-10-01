@@ -1,0 +1,25 @@
+/* Personalización estética complementaria a Bootstrap */
+body {
+    background-color: #f5f6f8;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.table th {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.style-resena {
+    white-space: pre-line;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.badge {
+    font-size: 0.85rem;
+    font-weight: 500;
+}

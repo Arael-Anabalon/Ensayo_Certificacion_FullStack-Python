@@ -1,39 +1,29 @@
 from flask_app.config.mysqlconnection import connectToMySQL
 
 class Genero:
-    def __init__(self, db_conexion):
-        self.db = db_conexion
+    BASE_DE_DATOS = 'esquema_bookhub'
 
-    def crear(self, nombre, descripcion, creado_por):
-        cursor = self.db.cursor()
-        sql = "INSERT INTO generos (nombre, descripcion, created_by) VALUES (%s, %s, %s)"
-        cursor.execute(sql, (nombre, descripcion, creado_por))
-        self.db.commit()
-        cursor.close()
+    def __init__(self, data):
+        self.id = data['id']
+        self.nombre = data['nombre']
+        self.descripcion = data['descripcion']
 
-    def obtener_todos(self):
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM generos WHERE deleted = 0 ORDER BY nombre ASC")
-        generos = cursor.fetchall()
-        cursor.close()
-        return generos
+    # CREATE: Insertar género
+    @classmethod
+    def guardar(cls, data):
+        query = "INSERT INTO generos (nombre, descripcion, created_by) VALUES (%(nombre)s, %(descripcion)s, %(created_by)s);"
+        return connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)
 
-    def obtener_por_id(self, genero_id):
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM generos WHERE id = %s AND deleted = 0", (genero_id,))
-        genero = cursor.fetchone()
-        cursor.close()
-        return genero
+    # READ: Obtener todos los géneros activos
+    @classmethod
+    def obtener_todos(cls):
+        query = "SELECT * FROM generos WHERE deleted = 0 ORDER BY nombre ASC;"
+        resultados = connectToMySQL(cls.BASE_DE_DATOS).query_db(query)
+        return [cls(fila) for fila in resultados] if resultados else []
 
-    def actualizar(self, genero_id, nombre, descripcion, actualizado_por):
-        cursor = self.db.cursor()
-        sql = "UPDATE generos SET nombre = %s, descripcion = %s, updated_by = %s WHERE id = %s"
-        cursor.execute(sql, (nombre, descripcion, actualizado_por, genero_id))
-        self.db.commit()
-        cursor.close()
-
-    def borrado_logico(self, genero_id, actualizado_por):
-        cursor = self.db.cursor()
-        cursor.execute("UPDATE generos SET deleted = 1, updated_by = %s WHERE id = %s", (actualizado_por, genero_id))
-        self.db.commit()
-        cursor.close()
+    # DELETE: Borrado lógico de un género
+    @classmethod
+    def borrar_logico(cls, id, usuario):
+        query = "UPDATE generos SET deleted = 1, updated_by = %(updated_by)s WHERE id = %(id)s;"
+        data = {'id': id, 'updated_by': usuario}
+        return connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)

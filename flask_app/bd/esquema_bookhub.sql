@@ -1,12 +1,15 @@
+-- Creación de DB "esquema_bookhub"
 CREATE DATABASE IF NOT EXISTS esquema_bookhub;
+-- Uso de DB "esquema_bookhub"
 USE esquema_bookhub;
 
+-- Creación de tabla "usuarios"
 CREATE TABLE IF NOT EXISTS usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL,
     apellido VARCHAR(50) NOT NULL,
     email VARCHAR(50) NOT NULL,
-    contrasena VARCHAR(100) NOT NULL,
+    contrasena VARCHAR(225) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
     created_by VARCHAR(50),
@@ -14,6 +17,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     deleted TINYINT(1) NOT NULL DEFAULT 0
 );
 
+-- Creación de tabla "autores"
 CREATE TABLE IF NOT EXISTS autores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL,
@@ -25,6 +29,7 @@ CREATE TABLE IF NOT EXISTS autores (
     deleted TINYINT(1) NOT NULL DEFAULT 0
 );
 
+-- Creación de tabla "generos"
 CREATE TABLE IF NOT EXISTS generos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL,
@@ -36,11 +41,12 @@ CREATE TABLE IF NOT EXISTS generos (
     deleted TINYINT(1) NOT NULL DEFAULT 0
 );
 
+-- Creación de tabla "libros"
 CREATE TABLE IF NOT EXISTS libros (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL,
     autor INT NOT NULL, 
-    descripcion VARCHAR(150) NOT NULL,
+    descripcion VARCHAR(300) NOT NULL,
     fecha_publicacion DATE NOT NULL,
     imagen_portada VARCHAR(255) NULL, 
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -51,6 +57,7 @@ CREATE TABLE IF NOT EXISTS libros (
     FOREIGN KEY (autor) REFERENCES autores(id) ON DELETE RESTRICT
 );
 
+-- Creación de tabla intermedia "libros_generos"
 CREATE TABLE IF NOT EXISTS libros_generos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_libro INT NOT NULL,
@@ -65,6 +72,7 @@ CREATE TABLE IF NOT EXISTS libros_generos (
     UNIQUE KEY libro_genero_unico (id_libro, id_genero) 
 );
 
+-- Creación de tabla "favoritos"
 CREATE TABLE IF NOT EXISTS favoritos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL,

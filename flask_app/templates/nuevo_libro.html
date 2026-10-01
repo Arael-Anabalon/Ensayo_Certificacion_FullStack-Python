@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0 p-4">
+                <h3 class="text-center mb-4 fw-bold text-primary">Registrar Nuevo Libro</h3>
+                <form action="/libros/nuevo" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Titulo del Libro</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Seleccionar Autor</label>
+                        <div class="input-group">
+                            <select name="autor_id" class="form-select" required>
+                                <option value="" disabled selected>-- Elige un autor --</option>
+                                {% for autor in autores %}
+                                <option value="{{ autor.id }}">{{ autor.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <a href="/autores/nuevo" class="btn btn-outline-secondary">Crear Autor</a>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de Publicacion</label>
+                        <input type="date" name="fecha_publicacion" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL de la Imagen de Portada</label>
+                        <input type="url" name="imagen_portada" class="form-control">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Sinopsis / Descripcion</label>
+                        <textarea name="descripcion" rows="4" class="form-control" required></textarea>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary shadow-sm">Guardar Libro</button>
+                        <a href="/libros" class="btn btn-light">Volver al Catalogo</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

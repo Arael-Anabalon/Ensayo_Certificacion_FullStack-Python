@@ -1,59 +1,44 @@
+import re
 from flask_app.config.mysqlconnection import connectToMySQL
+from flask import flash
+
+EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
 
 class Usuario:
-    def __init__(self, db_conexion, bcrypt_instancia):
-        self.db = db_conexion
-        self.bcrypt = bcrypt_instancia
+    BASE_DE_DATOS = 'esquema_bookhub'
 
-    def registrar(self, nombre, apellido, email, contrasena_plana):
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("SELECT id FROM usuarios WHERE email = %s AND deleted = 0", (email,))
-        if cursor.fetchone():
-            cursor.close()
-            return False
-        
-        contrasena_encriptada = self.bcrypt.generate_password_hash(contrasena_plana).decode('utf-8')
-        sql = """INSERT INTO usuarios (nombre, apellido, email, contrasena, created_by) 
-                 VALUES (%s, %s, %s, %s, %s)"""
-        cursor.execute(sql, (nombre, apellido, email, contrasena_encriptada, email))
-        self.db.commit()
-        cursor.close()
-        return True
+    def __init__(self, data):
+        self.id = data['id']
+        self.nombre = data['nombre']
+        self.apellido = data['apellido']
+        self.email = data['email']
+        self.contrasena = data['contrasena']
 
-    def login(self, email, contrasena_plana):
-        cursor = self.db.cursor(dictionary=True)
-        sql = "SELECT * FROM usuarios WHERE email = %s AND deleted = 0"
-        cursor.execute(sql, (email,))
-        usuario = cursor.fetchone()
-        cursor.close()
-        
-        if usuario and self.bcrypt.check_password_hash(usuario['contrasena'], contrasena_plana):
-            return usuario
-        return None
+    # CREATE: Insertar un usuario
+    @classmethod
+    def registrar(cls, data):
+        query = "INSERT INTO usuarios (nombre, apellido, email, contrasena, created_by) VALUES (%(nombre)s, %(apellido)s, %(email)s, %(contrasena)s, %(nombre)s);"
+        return connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)
 
-    def obtener_todos(self):
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("SELECT id, nombre, apellido, email, created_at FROM usuarios WHERE deleted = 0")
-        usuarios = cursor.fetchall()
-        cursor.close()
-        return usuarios
+    # READ: Buscar usuario por email excluyendo borrados
+    @classmethod
+    def obtener_por_email(cls, email):
+        query = "SELECT * FROM usuarios WHERE email = %(email)s AND deleted = 0;"
+        data = {'email': email}
+        resultados = connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)
+        return cls(resultados[0]) if resultados else None
 
-    def obtener_por_id(self, usuario_id):
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("SELECT id, nombre, apellido, email FROM usuarios WHERE id = %s AND deleted = 0", (usuario_id,))
-        usuario = cursor.fetchone()
-        cursor.close()
-        return usuario
-
-    def actualizar(self, usuario_id, nombre, apellido, email, actualizado_por):
-        cursor = self.db.cursor()
-        sql = "UPDATE usuarios SET nombre = %s, apellido = %s, email = %s, updated_by = %s WHERE id = %s"
-        cursor.execute(sql, (nombre, apellido, email, actualizado_por, usuario_id))
-        self.db.commit()
-        cursor.close()
-
-    def borrado_logico(self, usuario_id, actualizado_por):
-        cursor = self.db.cursor()
-        cursor.execute("UPDATE usuarios SET deleted = 1, updated_by = %s WHERE id = %s", (actualizado_por, usuario_id))
-        self.db.commit()
-        cursor.close()
+    # READ: Validación de campos en el servidor
+    @staticmethod
+    def validar_registro(formulario):
+        es_valido = True
+        if len(formulario['nombre'].strip()) < 2:
+            flash("Nombre muy corto.", "danger")
+            es_valido = False
+        if not EMAIL_REGEX.match(formulario['email']):
+            flash("Email inválido.", "danger")
+            es_valido = False
+        if len(formulario['contrasena']) < 6:
+            flash("Contraseña muy corta.", "danger")
+            es_valido = False
+        return es_valido

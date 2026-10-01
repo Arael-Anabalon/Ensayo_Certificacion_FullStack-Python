@@ -1,53 +1,35 @@
 {% extends 'base.html' %}
+{% block contenido %}
+<div class="container mt-2">
+    <h2 class="fw-bold mb-4 text-danger">Mis Libros Favoritos</h2>
 
-{% block title %}Mis Favoritos - BookHub{% endblock %}
-
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2 class="mb-3">Mis Libros Favoritos</h2>
-        <p class="text-muted mb-4">Aquí puedes ver y gestionar todos los libros que has guardado en tu lista personal.
-        </p>
-
-        <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Título</th>
-                        <th>Autor</th>
-                        <th>Géneros</th>
-                        <th>Fecha de Publicación</th>
-                        <th class="text-center">Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for fav in favoritos %}
-                    <tr>
-                        <td class="fw-bold">{{ fav.nombre }}</td>
-                        <td>{{ fav.autor }}</td>
-                        <td>
-                            {% if fav.generos %}
-                            <span class="badge bg-secondary">{{ fav.generos }}</span>
-                            {% else %}
-                            <span class="text-muted italic">Sin especificar</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ fav.fecha_publicacion }}</td>
-                        <td class="text-center">
-                            <a href="{{ url_for('libros.detalle', id=fav.id) }}"
-                                class="btn btn-sm btn-outline-primary">Ver Detalle</a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center py-4 text-muted">
-                            <p class="mb-0">No tienes libros marcados como favoritos actualmente.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="table-responsive bg-white rounded shadow-sm">
+        <table class="table table-hover align-middle m-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Titulo del Libro</th>
+                    <th>Autor</th>
+                    <th class="text-end">Accion</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fav in favoritos %}
+                <tr>
+                    <td class="fw-semibold text-dark">{{ fav.nombre_libro }}</td>
+                    <td class="text-secondary">{{ fav.nombre_autor }}</td>
+                    <td class="text-end">
+                        <a href="/favoritos/eliminar/{{ fav.id }}" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('¿Quitar de favoritos?')">Quitar</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center py-4 text-muted">Aun no has agregado libros a tu lista de
+                        favoritos.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block contenido %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Columna Izquierda: Formulario de Edición de Datos Básicos -->
+        <div class="col-md-7">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Editar Libro: {{ libro['nombre'] }}</h3>
+                </div>
+                <div class="card-body">
+                    <form action="/libros/editar/{{ libro['id'] }}" method="POST">
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Título del Libro</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre"
+                                value="{{ libro['nombre'] }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="autor_id" class="form-label">Autor</label>
+                            <select class="form-select" id="autor_id" name="autor_id" required>
+                                {% for autor in autores %}
+                                <option value="{{ autor['id'] }}" {% if autor['id']==libro['autor'] %} selected {% endif
+                                    %}>
+                                    {{ autor['nombre'] }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="fecha_publicacion" class="form-label">Fecha de Publicación</label>
+                            <input type="date" class="form-control" id="fecha_publicacion" name="fecha_publicacion"
+                                value="{{ libro['fecha_publicacion'] }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="imagen_portada" class="form-label">URL de la Imagen de Portada</label>
+                            <input type="url" class="form-control" id="imagen_portada" name="imagen_portada"
+                                value="{{ libro['imagen_portada'] }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción / Sinopsis</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="4"
+                                required>{{ libro['descripcion'] }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/libros" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-success">Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Gestión de Géneros (Tabla Intermedia) -->
+        <div class="col-md-5">
+            <!-- Géneros Actualmente Asociados -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="card-title mb-0">Géneros Asignados</h5>
+                </div>
+                <div class="card-body">
+                    {% if generos_libro %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for gen in generos_libro %}
+                        <span class="badge bg-info text-dark d-flex align-items-center p-2 fs-6">
+                            {{ gen['nombre'] }}
+                            <a href="/libros/quitar-genero/{{ libro['id'] }}/{{ gen['id'] }}"
+                                class="btn-close btn-close-white ms-2" style="font-size: 0.65rem;"
+                                title="Quitar género"></a>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Este libro aún no tiene géneros asignados.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Formulario para Agregar Nuevo Género -->
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">Asignar Nuevo Género</h5>
+                </div>
+                <div class="card-body">
+                    <form action="/libros/asignar-genero" method="POST">
+                        <input type="hidden" name="libro_id" value="{{ libro['id'] }}">
+                        <div class="input-group">
+                            <select class="form-select" name="genero_id" required>
+                                <option value="" selected disabled>Selecciona un género...</option>
+                                {% for genero in generos %}
+                                <option value="{{ genero['id'] }}">{{ genero['nombre'] }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-primary" type="submit">Asignar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,69 +1,55 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
-from flask_bcrypt import Bcrypt
+from flask import Blueprint, render_template, redirect, request, session, flash
 from flask_app.models.usuario import Usuario
+from flask_app import bcrypt
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
-@usuarios_bp.route('/', methods=['GET', 'POST'])
-def login_registro():
-    bcrypt = Bcrypt(current_app)
-    if request.method == 'POST':
-        usuario_model = Usuario("esquema_bookhub", bcrypt)
-        accion = request.form.get('accion')
+# READ: Mostrar formulario de registro
+@usuarios_bp.route('/')
+def index():
+    if 'usuario_id' in session:
+        return redirect('/libros')
+    return render_template('registrarse.html')
 
-        if accion == 'registro':
-            nombre = request.form.get('nombre')
-            apellido = request.form.get('apellido')
-            email = request.form.get('email')
-            passw = request.form.get('contrasena')
-            conf_passw = request.form.get('confirmar_contrasena')
-
-            if len(nombre) < 2 or len(apellido) < 2:
-                flash('Nombre y apellido mínimo 2 caracteres', 'error')
-            elif passw != conf_passw:
-                flash('Contraseñas no coinciden', 'error')
-            else:
-                if usuario_model.registrar(nombre, apellido, email, passw):
-                    flash('Registro exitoso', 'success')
-                else:
-                    flash('El correo ya existe', 'error')
-
-        elif accion == 'login':
-            email = request.form.get('email')
-            passw = request.form.get('contrasena')
-            usuario = usuario_model.login(email, passw)
-            if usuario:
-                session['usuario_id'] = usuario['id']
-                session['usuario_nombre'] = f"{usuario['nombre']} {usuario['apellido']}"
-                session['usuario_email'] = usuario['email']
-                return redirect(url_for('libros.mis_libros'))
-            else:
-                flash('Credenciales incorrectas', 'error')
+# READ: Mostrar formulario de login
+@usuarios_bp.route('/iniciar-sesion')
+def vista_login():
+    if 'usuario_id' in session:
+        return redirect('/libros')
     return render_template('iniciar_sesion.html')
 
-@usuarios_bp.route('/usuarios')
-def listar():
-    if 'usuario_id' not in session: return redirect(url_for('usuarios.login_registro'))
-    lista = Usuario("esquema_bookhub", None).obtener_todos()
-    return render_template('usuarios_lista.html', usuarios=lista)
+# CREATE: Registrar nuevo usuario con contraseña encriptada
+@usuarios_bp.route('/usuarios/registrar', methods=['POST'])
+def procesar_registro():
+    if not Usuario.validar_registro(request.form):
+        return redirect('/')
 
-@usuarios_bp.route('/usuarios/editar/<int:id>', methods=['GET', 'POST'])
-def editar(id):
-    if 'usuario_id' not in session: return redirect(url_for('usuarios.login_registro'))
-    model = Usuario("esquema_bookhub", None)
-    if request.method == 'POST':
-        model.actualizar(id, request.form.get('nombre'), request.form.get('apellido'), request.form.get('email'), session['usuario_email'])
-        return redirect(url_for('usuarios.listar'))
-    user = model.obtener_por_id(id)
-    return render_template('usuarios_editar.html', usuario=user)
+    password_encriptada = bcrypt.generate_password_hash(request.form['contrasena']).decode('utf-8')
+    data = {
+        "nombre": request.form['nombre'],
+        "apellido": request.form['apellido'],
+        "email": request.form['email'],
+        "contrasena": password_encriptada
+    }
+    usuario_id = Usuario.registrar(data)
+    session['usuario_id'] = usuario_id
+    session['usuario_nombre'] = f"{data['nombre']} {data['apellido']}"
+    return redirect('/libros')
 
-@usuarios_bp.route('/usuarios/borrar/<int:id>', methods=['POST'])
-def borrar(id):
-    if 'usuario_id' not in session: return redirect(url_for('usuarios.login_registro'))
-    Usuario("esquema_bookhub", None).borrado_logico(id, session['usuario_email'])
-    return redirect(url_for('usuarios.listar'))
+# READ: Procesar el inicio de sesión
+@usuarios_bp.route('/usuarios/login', methods=['POST'])
+def procesar_login():
+    usuario = Usuario.obtener_por_email(request.form['email'])
+    if not usuario or not bcrypt.check_password_hash(usuario.contrasena, request.form['contrasena']):
+        flash("Credenciales incorrectas.", "danger")
+        return redirect('/iniciar-sesion')
 
-@usuarios_bp.route('/logout')
+    session['usuario_id'] = usuario.id
+    session['usuario_nombre'] = f"{usuario.nombre} {usuario.apellido}"
+    return redirect('/libros')
+
+# READ: Cerrar sesión limpia
+@usuarios_bp.route('/usuarios/logout')
 def logout():
     session.clear()
-    return redirect(url_for('usuarios.login_registro'))
+    return redirect('/iniciar-sesion')

@@ -1,72 +1,67 @@
 from flask_app.config.mysqlconnection import connectToMySQL
 
 class Libro:
-    def __init__(self, db_conexion):
-        self.db = db_conexion
+    BASE_DE_DATOS = 'esquema_bookhub'
 
-    def crear(self, nombre, autor_id, descripcion, fecha, portada, creado_por, generos_ids):
-        cursor = self.db.cursor()
-        sql_libro = """INSERT INTO libros (nombre, autor, descripcion, fecha_publicacion, imagen_portada, created_by) 
-                       VALUES (%s, %s, %s, %s, %s, %s)"""
-        cursor.execute(sql_libro, (nombre, autor_id, descripcion, fecha, portada, creado_por))
-        libro_id = cursor.lastrowid
+    def __init__(self, data):
+        self.id = data['id']
+        self.nombre = data['nombre']
+        self.autor = data['autor']
+        self.descripcion = data['descripcion']
+        self.fecha_publicacion = data['fecha_publicacion']
+        self.imagen_portada = data.get('imagen_portada')
+        self.nombre_autor = data.get('nombre_autor')
 
-        for g_id in generos_ids:
-            cursor.execute("INSERT INTO libros_generos (id_libro, id_genero, created_by) VALUES (%s, %s, %s)", 
-                           (libro_id, g_id, creado_por))
-        self.db.commit()
-        cursor.close()
-        return libro_id
+    # CREATE: Insertar libro
+    @classmethod
+    def guardar(cls, data):
+        query = "INSERT INTO libros (nombre, autor, descripcion, fecha_publicacion, imagen_portada, created_by) VALUES (%(nombre)s, %(autor)s, %(descripcion)s, %(fecha_publicacion)s, %(imagen_portada)s, %(created_by)s);"
+        return connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)
 
-    def obtener_todos(self):
-        cursor = self.db.cursor(dictionary=True)
-        sql = """
-            SELECT l.id, l.nombre, a.nombre AS autor, l.fecha_publicacion, l.created_by,
-                   GROUP_CONCAT(g.nombre SEPARATOR ', ') AS generos,
-                   (SELECT COUNT(*) FROM favoritos f WHERE f.id_libro = l.id AND f.deleted = 0) AS total_favoritos
-            FROM libros l
-            INNER JOIN autores a ON l.autor = a.id
-            LEFT JOIN libros_generos lg ON l.id = lg.id_libro AND lg.deleted = 0
-            LEFT JOIN generos g ON lg.id_genero = g.id AND g.deleted = 0
-            WHERE l.deleted = 0 AND a.deleted = 0
-            GROUP BY l.id ORDER BY l.created_at DESC;
-        """
-        cursor.execute(sql)
-        libros = cursor.fetchall()
-        cursor.close()
-        return libros
+    # READ: Obtener libros con INNER JOIN del autor activo
+    @classmethod
+    def obtener_todos(cls):
+        query = "SELECT libros.*, autores.nombre AS nombre_autor FROM libros JOIN autores ON libros.autor = autores.id WHERE libros.deleted = 0 AND autores.deleted = 0;"
+        resultados = connectToMySQL(cls.BASE_DE_DATOS).query_db(query)
+        return [cls(fila) for fila in resultados] if resultados else []
 
-    def obtener_por_id(self, libro_id):
-        cursor = self.db.cursor(dictionary=True)
-        sql = """
-            SELECT l.*, a.nombre AS autor_nombre, GROUP_CONCAT(g.id) AS generos_ids, GROUP_CONCAT(g.nombre SEPARATOR ', ') AS generos
-            FROM libros l
-            INNER JOIN autores a ON l.autor = a.id
-            LEFT JOIN libros_generos lg ON l.id = lg.id_libro AND lg.deleted = 0
-            LEFT JOIN generos g ON lg.id_genero = g.id AND g.deleted = 0
-            WHERE l.id = %s AND l.deleted = 0
-            GROUP BY l.id;
-        """
-        cursor.execute(sql, (libro_id,))
-        libro = cursor.fetchone()
-        cursor.close()
-        return libro
+    # READ: Obtener un libro por ID
+    @classmethod
+    def obtener_por_id(cls, id):
+        query = "SELECT libros.*, autores.nombre AS nombre_autor FROM libros JOIN autores ON libros.autor = autores.id WHERE libros.id = %(id)s AND libros.deleted = 0;"
+        data = {'id': id}
+        resultados = connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)
+        return cls(resultados[0]) if resultados else None
 
-    def actualizar(self, libro_id, nombre, autor_id, descripcion, fecha, generos_ids, actualizado_por):
-        cursor = self.db.cursor()
-        sql_update = """UPDATE libros SET nombre = %s, autor = %s, descripcion = %s, fecha_publicacion = %s, updated_by = %s 
-                        WHERE id = %s"""
-        cursor.execute(sql_update, (nombre, autor_id, descripcion, fecha, actualizado_por, libro_id))
+    # UPDATE: Modificar registro de libro
+    @classmethod
+    def actualizar(cls, data):
+        query = "UPDATE libros SET nombre = %(nombre)s, autor = %(autor)s, descripcion = %(descripcion)s, fecha_publicacion = %(fecha_publicacion)s, imagen_portada = %(imagen_portada)s, updated_by = %(updated_by)s WHERE id = %(id)s;"
+        return connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)
 
-        cursor.execute("UPDATE libros_generos SET deleted = 1 WHERE id_libro = %s", (libro_id,))
-        for g_id in generos_ids:
-            cursor.execute("""INSERT INTO libros_generos (id_libro, id_genero, created_by) VALUES (%s, %s, %s) 
-                              ON DUPLICATE KEY UPDATE deleted = 0""", (libro_id, g_id, actualizado_por))
-        self.db.commit()
-        cursor.close()
+    # DELETE: Borrado lógico de un libro
+    @classmethod
+    def borrar_logico(cls, id, usuario):
+        query = "UPDATE libros SET deleted = 1, updated_by = %(updated_by)s WHERE id = %(id)s;"
+        data = {'id': id, 'updated_by': usuario}
+        return connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)
 
-    def borrado_logico(self, libro_id, actualizado_por):
-        cursor = self.db.cursor()
-        cursor.execute("UPDATE libros SET deleted = 1, updated_by = %s WHERE id = %s", (actualizado_por, libro_id))
-        self.db.commit()
-        cursor.close()
+    # CREATE: Asociar género a libro en tabla libros_generos (Maneja reactivación por soft delete)
+    @classmethod
+    def guardar_genero_asociado(cls, data):
+        query = "INSERT INTO libros_generos (id_libro, id_genero, created_by) VALUES (%(id_libro)s, %(id_genero)s, %(created_by)s) ON DUPLICATE KEY UPDATE deleted = 0, updated_by = %(created_by)s;"
+        return connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)
+
+    # READ: Obtener géneros activos de este libro específico
+    @classmethod
+    def obtener_generos_asociados(cls, id_libro):
+        query = "SELECT generos.* FROM generos JOIN libros_generos ON libros_generos.id_genero = generos.id WHERE libros_generos.id_libro = %(id_libro)s AND libros_generos.deleted = 0 AND generos.deleted = 0;"
+        data = {'id_libro': id_libro}
+        return connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)
+
+    # DELETE: Soft delete de la relación género-libro
+    @classmethod
+    def borrar_genero_asociado(cls, id_libro, id_genero, usuario):
+        query = "UPDATE libros_generos SET deleted = 1, updated_by = %(updated_by)s WHERE id_libro = %(id_libro)s AND id_genero = %(id_genero)s;"
+        data = {'id_libro': id_libro, 'id_genero': id_genero, 'updated_by': usuario}
+        return connectToMySQL(cls.BASE_DE_DATOS).query_db(query, data)

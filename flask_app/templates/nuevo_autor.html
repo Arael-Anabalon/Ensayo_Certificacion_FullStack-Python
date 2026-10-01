@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm border-0 p-4">
+                <h3 class="text-center mb-4 fw-bold text-primary">Registrar Nuevo Autor</h3>
+                <form action="/autores/nuevo" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Autor</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Correo Electronico</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Guardar Autor</button>
+                        <a href="/libros/nuevo" class="btn btn-light">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
