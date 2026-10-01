@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if libro_editar %}Editar Libro{% else %}Nuevo Libro{% endif %} - BookHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4 mb-5">
+            <h2 class="card-title mb-4">{% if libro_editar %}Editar Datos de Libro{% else %}Publicar Nuevo Libro{% endif
+                %}</h2>
+
+            <form
+                action="{% if libro_editar %}{{ url_for('libros.editar', id=libro_editar.id) }}{% else %}{{ url_for('libros.nuevo') }}{% endif %}"
+                method="POST">
+
+                <div class="mb-3">
+                    <label class="form-label">Título del Libro:</label>
+                    <input type="text" class="form-control" name="nombre"
+                        value="{{ libro_editar.nombre if libro_editar else '' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Autor de la Obra:</label><br>
+                    <select id="autor_select" class="form-select" name="autor_id" style="width: 100%;" required>
+                        <option value="">-- Busca o escribe un autor --</option>
+                        {% for autor in autores %}
+                        <option value="{{ autor.id }}" {% if libro_editar and autor.id==libro_editar.autor %}selected{%
+                            endif %}>{{ autor.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label d-block">Selecciona sus Géneros:</label>
+                    {% set libro_gens = libro_editar.generos_ids.split(',') if (libro_editar and
+                    libro_editar.generos_ids) else [] %}
+                    <div class="row p-2 border rounded bg-light mx-0" style="max-height: 150px; overflow-y: auto;">
+                        {% for genero in generos %}
+                        <div class="col-sm-6 form-check">
+                            <input type="checkbox" class="form-check-input" name="generos_ids" value="{{ genero.id }}"
+                                id="gen_{{ genero.id }}" {% if genero.id|string in libro_gens %}checked{% endif %}>
+                            <label class="form-check-label" for="gen_{{ genero.id }}">{{ genero.nombre }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Fecha de Publicación:</label>
+                    <input type="date" class="form-control" name="fecha_publicacion"
+                        value="{{ libro_editar.fecha_publicacion if libro_editar else '' }}" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Sinopsis / Descripción:</label>
+                    <textarea class="form-control" name="descripcion" rows="5"
+                        required>{{ libro_editar.descripcion if libro_editar else '' }}</textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success flex-grow-1">{% if libro_editar %}Guardar Cambios{%
+                        else %}Publicar Libro{% endif %}</button>
+                    <a href="{{ url_for('libros.mis_libros') }}" class="btn btn-secondary px-4">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/buscar_autor.js') }}"></script>
+{% endblock %}

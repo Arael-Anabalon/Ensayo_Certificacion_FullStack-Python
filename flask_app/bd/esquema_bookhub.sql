@@ -1,0 +1,80 @@
+CREATE DATABASE IF NOT EXISTS esquema_bookhub;
+USE esquema_bookhub;
+
+CREATE TABLE IF NOT EXISTS usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    apellido VARCHAR(50) NOT NULL,
+    email VARCHAR(50) NOT NULL,
+    contrasena VARCHAR(100) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+    deleted TINYINT(1) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS autores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    email VARCHAR(50) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+    deleted TINYINT(1) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS generos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    descripcion VARCHAR(100) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+    deleted TINYINT(1) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS libros (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    autor INT NOT NULL, 
+    descripcion VARCHAR(150) NOT NULL,
+    fecha_publicacion DATE NOT NULL,
+    imagen_portada VARCHAR(255) NULL, 
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50), 
+    updated_by VARCHAR(50),
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
+    FOREIGN KEY (autor) REFERENCES autores(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS libros_generos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_libro INT NOT NULL,
+    id_genero INT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
+    FOREIGN KEY (id_libro) REFERENCES libros(id) ON DELETE RESTRICT,
+    FOREIGN KEY (id_genero) REFERENCES generos(id) ON DELETE RESTRICT,
+    UNIQUE KEY libro_genero_unico (id_libro, id_genero) 
+);
+
+CREATE TABLE IF NOT EXISTS favoritos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    id_libro INT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
+    FOREIGN KEY (id_libro) REFERENCES libros(id) ON DELETE RESTRICT,
+    UNIQUE KEY usuario_libro_unico (id_usuario, id_libro)
+);
